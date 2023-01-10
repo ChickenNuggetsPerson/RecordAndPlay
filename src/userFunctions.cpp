@@ -156,7 +156,6 @@ void record(const char* pathFile) {
       running = false;
     }
 
-    // sleep for a short time to give the processor a break
     vex::task::sleep(10);
     
   }
@@ -172,7 +171,6 @@ void replay( const char* pathFile) {
 
   bool debug = true;
 
-  // run the program in a loop
   while (true) {
     // read a line from the file
     std::string line;
@@ -189,7 +187,7 @@ void replay( const char* pathFile) {
     }
 
   
-    // parse the x and y values from the line
+    // parse the values from the line
     std::stringstream ss(line);
 
     unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
@@ -272,9 +270,6 @@ void replay( const char* pathFile) {
 
     }
 
-
-
-    // sleep for a short time to give the processor a break
     vex::task::sleep(10);
   }
 
