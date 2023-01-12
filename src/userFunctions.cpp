@@ -137,13 +137,17 @@ void record(const char* pathFile) {
   Brain.Screen.setCursor(3, 4);
   Brain.Screen.print(pathFile);
 
+  
+
   bool running = true;
 
   while (running) {
     
+    double startTime = Brain.timer(vex::timeUnits::msec);
+
     // get the values of the controller's joystick axes
-    double left_Axis = Controller1.Axis3.position();
-    double right_Axis = Controller1.Axis2.position();
+    double left_Axis = LeftDriveSmart.velocity(vex::percentUnits::pct); //Controller1.Axis3.position();
+    double right_Axis = RightDriveSmart.velocity(vex::percentUnits::pct); //Controller1.Axis2.position();
 
     // output the values to the file
     output_file << left_Axis << "," << right_Axis << "," << RunLauncher << ","<< runLauncherFeeder << ","<< runMainFeeder << ","<<std::endl;
@@ -155,8 +159,12 @@ void record(const char* pathFile) {
       output_file.close();
       running = false;
     }
+    
 
-    vex::task::sleep(10);
+    double endTime = Brain.timer(vex::timeUnits::msec);
+    double deltaTime = endTime - startTime;
+    if (deltaTime > 20) { Brain.Screen.clearScreen(); Brain.Screen.print("Reading is too slow"); }
+    vex::task::sleep(20 - deltaTime);
     
   }
 
@@ -172,6 +180,9 @@ void replay( const char* pathFile) {
   bool debug = true;
 
   while (true) {
+
+    double startTime = Brain.timer(vex::timeUnits::msec);
+
     // read a line from the file
     std::string line;
     std::getline(input_file, line);
@@ -245,7 +256,6 @@ void replay( const char* pathFile) {
       
     }
 
-
     if (debug) {
 
       Brain.Screen.clearScreen();
@@ -270,7 +280,13 @@ void replay( const char* pathFile) {
 
     }
 
-    vex::task::sleep(10);
+    double endTime = Brain.timer(vex::timeUnits::msec);
+    double deltaTime = endTime - startTime;
+
+    //Brain.Screen.setCursor(7, 5);
+    //Brain.Screen.print(20 - deltaTime);
+
+    vex::task::sleep(20 - deltaTime);
   }
 
 }

@@ -9,6 +9,9 @@ extern motor_group LauncherGroup;
 extern motor PickerUper;
 extern motor LauncherFeeder;
 
+extern motor_group RightDriveSmart;
+extern motor_group LeftDriveSmart;
+
 extern unsigned int x, y;
 
 /**

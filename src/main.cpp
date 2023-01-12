@@ -31,7 +31,7 @@ using namespace vex;
 
 
 const char* pathNames[4] = {
-  "Paths/Left/ToMiddle.txt",
+  "Paths/Skills/main.txt",
   "Paths/Left/Launch.txt",
   "Paths/Right/GoToRoller.txt",
   "Paths/Right/RollerToMid.txt"
