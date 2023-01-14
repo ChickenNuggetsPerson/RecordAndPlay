@@ -43,8 +43,8 @@ int rc_auto_loop_function_Controller1() {
       // calculate the drivetrain motor velocities from the controller joystick axies
       // left = Axis3
       // right = Axis2
-      int drivetrainLeftSideSpeed = Controller1.Axis3.position();
-      int drivetrainRightSideSpeed = Controller1.Axis2.position();
+      int drivetrainLeftSideSpeed = Controller1.Axis3.position() / 2;
+      int drivetrainRightSideSpeed = Controller1.Axis2.position() /2 ;
       
       // check if the value is inside of the deadband range
       if (drivetrainLeftSideSpeed < 5 && drivetrainLeftSideSpeed > -5) {
@@ -84,9 +84,9 @@ int rc_auto_loop_function_Controller1() {
         RightDriveSmart.spin(forward);
       }
     }
-
+    
     if ( x != 0 || y != 0 ) {
-
+      
       // Same code as above but for the auton driving
 
       // left = Axis3

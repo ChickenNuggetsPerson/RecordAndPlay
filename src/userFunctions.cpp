@@ -137,21 +137,38 @@ void record(const char* pathFile) {
   Brain.Screen.setCursor(3, 4);
   Brain.Screen.print(pathFile);
 
-  
+  RightDriveSmart.resetPosition();
+  LeftDriveSmart.resetPosition();
 
   bool running = true;
+
+  double deltaTime = 0;
 
   while (running) {
     
     double startTime = Brain.timer(vex::timeUnits::msec);
 
     // get the values of the controller's joystick axes
-    double left_Axis = LeftDriveSmart.velocity(vex::percentUnits::pct); //Controller1.Axis3.position();
-    double right_Axis = RightDriveSmart.velocity(vex::percentUnits::pct); //Controller1.Axis2.position();
+    double left_Axis = Controller1.Axis3.position() / 2; //LeftDriveSmart.velocity(vex::percentUnits::pct); //
+    double right_Axis = Controller1.Axis2.position() / 2; //RightDriveSmart.velocity(vex::percentUnits::pct); //
 
+
+    Brain.Screen.clearScreen();
+    Brain.Screen.setCursor(2, 2);
+    Brain.Screen.print("Left Pos: ");
+    Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));
+
+    Brain.Screen.setCursor(4, 2);
+    Brain.Screen.print("Right Pos: ");
+    Brain.Screen.print(RightDriveSmart.position(vex::rotationUnits::rev));
+   
+    Brain.Screen.setCursor(6, 2);
+    Brain.Screen.print(deltaTime);
+  
+    
     // output the values to the file
-    output_file << left_Axis << "," << right_Axis << "," << RunLauncher << ","<< runLauncherFeeder << ","<< runMainFeeder << ","<<std::endl;
-
+    output_file << left_Axis << "," << right_Axis << "," << RunLauncher << ","<< runLauncherFeeder << ","<< runMainFeeder << ","<< LeftDriveSmart.position(vex::rotationUnits::rev) << "," << RightDriveSmart.position(vex::rotationUnits::rev) << ","<< deltaTime << "," << std::endl;
+    
 
     if (Controller1.ButtonY.pressing()) {
       Controller1.Screen.newLine();
@@ -160,12 +177,15 @@ void record(const char* pathFile) {
       running = false;
     }
     
-
-    double endTime = Brain.timer(vex::timeUnits::msec);
-    double deltaTime = endTime - startTime;
-    if (deltaTime > 20) { Brain.Screen.clearScreen(); Brain.Screen.print("Reading is too slow"); }
-    vex::task::sleep(20 - deltaTime);
     
+    
+    //if (deltaTime > 100) { Brain.Screen.clearScreen(); Brain.Screen.print("Reading is too slow"); Controller1.rumble(".."); Controller1.Screen.setCursor(2, 2); Controller1.Screen.print(deltaTime);}
+
+    vex::task::sleep(10);
+
+    
+    double endTime = Brain.timer(vex::timeUnits::msec);
+    deltaTime = endTime - startTime;
   }
 
 }
@@ -177,11 +197,24 @@ void replay( const char* pathFile) {
 
   Brain.Screen.setPenColor(vex::color::white);
 
+  RightDriveSmart.resetPosition();
+  LeftDriveSmart.resetPosition();
+
+  //double lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
+  //double lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
+
+  double readDeltaTime = 0;
+  double deltaTime;
+
   bool debug = true;
 
   while (true) {
 
     double startTime = Brain.timer(vex::timeUnits::msec);
+
+
+    //if ( LeftDriveSmart.position(vex::rotationUnits::rev) != lastLeftPos ) { LeftDriveSmart.rotateTo(lastLeftPos, vex::rotationUnits::rev); }
+    //if ( RightDriveSmart.position(vex::rotationUnits::rev) != lastRightPos ) { RightDriveSmart.rotateTo(lastRightPos, vex::rotationUnits::rev); }
 
     // read a line from the file
     std::string line;
@@ -194,6 +227,8 @@ void replay( const char* pathFile) {
       input_file.seekg(0, std::ios::beg);
       x = 0;
       y = 0;
+
+      wait(10, seconds);
       break;
     }
 
@@ -202,6 +237,7 @@ void replay( const char* pathFile) {
     std::stringstream ss(line);
 
     unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
+    double leftPos, rightPos = 0;
 
     std::string x_str;
     std::getline(ss, x_str, ',');
@@ -233,9 +269,33 @@ void replay( const char* pathFile) {
     runmainfeedStream >> runmainfeed;
 
 
+    std::string leftPos_str;
+    std::getline(ss, leftPos_str, ',');
+    std::istringstream LeftPosStream(leftPos_str.c_str());
+    LeftPosStream >> leftPos;
+
+
+    std::string rightPos_str;
+    std::getline(ss, rightPos_str, ',');
+    std::istringstream rightPosStream(rightPos_str.c_str());
+    rightPosStream >> rightPos;
+
+    
+
+    std::string readDeltaTime_str;
+    std::getline(ss, readDeltaTime_str, ',');
+    std::istringstream readDeltaTimeStream(readDeltaTime_str.c_str());
+    readDeltaTimeStream >> readDeltaTime;
+
+
+
+
     RunLauncher = runlaunch;
     runLauncherFeeder = runlaunchfeed;
     runMainFeeder = runmainfeed;
+
+    //LeftDriveSmart.rotateTo(leftPos, vex::rotationUnits::rev);
+    //RightDriveSmart.rotateTo(rightPos, vex::rotationUnits::rev);
 
     if (!launchControllIsRunning) {
       if (RunLauncher == 1) {
@@ -253,7 +313,8 @@ void replay( const char* pathFile) {
       LauncherGroup.setVelocity(LauncherVel, percent);
       LauncherFeeder.setVelocity(runLauncherFeeder * 100, percent);
       PickerUper.setVelocity(runMainFeeder, percent);
-      
+
+
     }
 
     if (debug) {
@@ -273,20 +334,40 @@ void replay( const char* pathFile) {
       Brain.Screen.print(runlaunchfeed); 
       Brain.Screen.setCursor(4, 5);
       Brain.Screen.print("RunMainFeed: ");
-      Brain.Screen.print(runmainfeed); 
+      Brain.Screen.print(runmainfeed);
+
+      Brain.Screen.setCursor(5, 5);
+      Brain.Screen.print("Delata: ");
+      Brain.Screen.print(readDeltaTime);
+      Brain.Screen.print("   ");
+      Brain.Screen.print(deltaTime);
+      Brain.Screen.print("   ");
+      Brain.Screen.print(readDeltaTime - deltaTime);
+
       Brain.Screen.setCursor(6, 5);
       Brain.Screen.print("Lancher Vel: ");
-      Brain.Screen.print(LauncherVel);     
+      Brain.Screen.print(LauncherVel);    
+ 
+      Brain.Screen.setCursor(8, 5);
+      Brain.Screen.print("ReadLeftPos: ");
+      Brain.Screen.print(leftPos);    
+
+      Brain.Screen.setCursor(9, 5);
+      Brain.Screen.print("ActualLeftPos: ");
+      Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));    
 
     }
 
     double endTime = Brain.timer(vex::timeUnits::msec);
-    double deltaTime = endTime - startTime;
+    deltaTime = endTime - startTime;
 
-    //Brain.Screen.setCursor(7, 5);
-    //Brain.Screen.print(20 - deltaTime);
+    Brain.Screen.setCursor(7, 5);
+    Brain.Screen.print(readDeltaTime - deltaTime);
 
-    vex::task::sleep(20 - deltaTime);
+    vex::task::sleep(fabs(readDeltaTime - deltaTime));
+
+    //lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
+    //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
 
 }
