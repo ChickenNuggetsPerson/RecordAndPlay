@@ -8,13 +8,12 @@ using code = vision::code;
 brain  Brain;
 
 // VEXcode device constructors
-motor leftMotorA = motor(PORT19, ratio36_1, false);
-motor leftMotorB = motor(PORT20, ratio36_1, false);
+motor leftMotorA = motor(PORT20, ratio36_1, false);
+motor leftMotorB = motor(PORT19, ratio36_1, false);
 motor_group LeftDriveSmart = motor_group(leftMotorA, leftMotorB);
-motor rightMotorA = motor(PORT11, ratio36_1, true);
-motor rightMotorB = motor(PORT12, ratio36_1, true);
+motor rightMotorA = motor(PORT12, ratio36_1, true);
+motor rightMotorB = motor(PORT11, ratio36_1, true);
 motor_group RightDriveSmart = motor_group(rightMotorA, rightMotorB);
-drivetrain Drivetrain = drivetrain(LeftDriveSmart, RightDriveSmart, 319.19, 254, 254, mm, 1);
 controller Controller1 = controller(primary);
 motor LauncherGroupMotorA = motor(PORT14, ratio6_1, true);
 motor LauncherGroupMotorB = motor(PORT15, ratio6_1, false);
@@ -24,8 +23,14 @@ motor LauncherFeeder = motor(PORT13, ratio36_1, false);
 
 
 
-unsigned int x, y = 0;
+int motorFL = 0;
+int motorFR = 0;
+int motorBL = 0;
+int motorBR = 0;
 
+bool replaying = false;
+
+int andrewDriving = 1;
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -38,100 +43,76 @@ bool DrivetrainRNeedsToBeStopped_Controller1 = true;
 int rc_auto_loop_function_Controller1() {
   // process the controller input every 20 milliseconds
   // update the motors based on the input values
-  while(true) {
-    if(RemoteControlCodeEnabled) {
-      // calculate the drivetrain motor velocities from the controller joystick axies
-      // left = Axis3
-      // right = Axis2
-      int drivetrainLeftSideSpeed = Controller1.Axis3.position() / 2;
-      int drivetrainRightSideSpeed = Controller1.Axis2.position() /2 ;
-      
-      // check if the value is inside of the deadband range
-      if (drivetrainLeftSideSpeed < 5 && drivetrainLeftSideSpeed > -5) {
-        // check if the left motor has already been stopped
-        if (DrivetrainLNeedsToBeStopped_Controller1) {
-          // stop the left drive motor
-          LeftDriveSmart.stop();
-          // tell the code that the left motor has been stopped
-          DrivetrainLNeedsToBeStopped_Controller1 = false;
-        }
-      } else {
-        // reset the toggle so that the deadband code knows to stop the left motor nexttime the input is in the deadband range
-        DrivetrainLNeedsToBeStopped_Controller1 = true;
-      }
-      // check if the value is inside of the deadband range
-      if (drivetrainRightSideSpeed < 5 && drivetrainRightSideSpeed > -5) {
-        // check if the right motor has already been stopped
-        if (DrivetrainRNeedsToBeStopped_Controller1) {
-          // stop the right drive motor
-          RightDriveSmart.stop();
-          // tell the code that the right motor has been stopped
-          DrivetrainRNeedsToBeStopped_Controller1 = false;
-        }
-      } else {
-        // reset the toggle so that the deadband code knows to stop the right motor next time the input is in the deadband range
-        DrivetrainRNeedsToBeStopped_Controller1 = true;
-      }
-      
-      // only tell the left drive motor to spin if the values are not in the deadband range
-      if (DrivetrainLNeedsToBeStopped_Controller1) {
-        LeftDriveSmart.setVelocity(drivetrainLeftSideSpeed, percent);
-        LeftDriveSmart.spin(forward);
-      }
-      // only tell the right drive motor to spin if the values are not in the deadband range
-      if (DrivetrainRNeedsToBeStopped_Controller1) {
-        RightDriveSmart.setVelocity(drivetrainRightSideSpeed, percent);
-        RightDriveSmart.spin(forward);
-      }
-    }
-    
-    if ( x != 0 || y != 0 ) {
-      
-      // Same code as above but for the auton driving
 
-      // left = Axis3
-      // right = Axis2
-      int drivetrainLeftSideSpeed = x;
-      int drivetrainRightSideSpeed = y;
-      
-      // check if the value is inside of the deadband range
-      if (drivetrainLeftSideSpeed < 5 && drivetrainLeftSideSpeed > -5) {
-        // check if the left motor has already been stopped
-        if (DrivetrainLNeedsToBeStopped_Controller1) {
-          // stop the left drive motor
-          LeftDriveSmart.stop();
-          // tell the code that the left motor has been stopped
-          DrivetrainLNeedsToBeStopped_Controller1 = false;
-        }
+
+  int strafeFBL = 0;
+  int strafeFBR = 0;
+  int strafeLRL = 0;
+  int strafeLRR = 0;
+
+
+  leftMotorA.spin(fwd);
+  leftMotorB.spin(fwd);
+  rightMotorA.spin(fwd);
+  rightMotorB.spin(fwd);
+
+  leftMotorA.setVelocity(0, percent);
+  leftMotorB.setVelocity(0, percent);
+  rightMotorA.setVelocity(0, percent);
+  rightMotorB.setVelocity(0, percent);
+
+  int deadzone = 10;
+
+  while(true) {
+    if(RemoteControlCodeEnabled && !replaying) {
+      // calculate the drivetrain motor velocities from the controller joystick axies
+      // left = Axis3 + Axis1
+      // right = Axis3 - Axis1
+
+      strafeFBL = Controller1.Axis3.position();
+      strafeFBR = Controller1.Axis2.position();
+
+      strafeLRL = - Controller1.Axis4.position();
+      strafeLRR = Controller1.Axis1.position();
+
+
+      if (strafeFBL < deadzone && strafeFBL > -deadzone) { strafeFBL = 0; }
+      if (strafeFBR < deadzone && strafeFBR > -deadzone) { strafeFBR = 0; }
+      if (strafeLRL < deadzone && strafeLRL > -deadzone) { strafeLRL = 0; }
+      if (strafeLRR < deadzone && strafeLRR > -deadzone) { strafeLRR = 0; }
+
+
+      if (andrewDriving == 1) {
+        motorFL = strafeFBL + strafeLRL;
+        motorFR = strafeFBR - strafeLRL;
+
+        motorBL = strafeFBL - strafeLRL;
+        motorBR = strafeFBR + strafeLRL;
       } else {
-        // reset the toggle so that the deadband code knows to stop the left motor nexttime the input is in the deadband range
-        DrivetrainLNeedsToBeStopped_Controller1 = true;
+        motorFL = strafeFBL + strafeLRL + strafeLRR;
+        motorFR = strafeFBL - strafeLRL - strafeLRR;
+
+        motorBL = strafeFBL - strafeLRL + strafeLRR;
+        motorBR = strafeFBL + strafeLRL - strafeLRR;
       }
-      // check if the value is inside of the deadband range
-      if (drivetrainRightSideSpeed < 5 && drivetrainRightSideSpeed > -5) {
-        // check if the right motor has already been stopped
-        if (DrivetrainRNeedsToBeStopped_Controller1) {
-          // stop the right drive motor
-          RightDriveSmart.stop();
-          // tell the code that the right motor has been stopped
-          DrivetrainRNeedsToBeStopped_Controller1 = false;
-        }
-      } else {
-        // reset the toggle so that the deadband code knows to stop the right motor next time the input is in the deadband range
-        DrivetrainRNeedsToBeStopped_Controller1 = true;
-      }
-      
-      // only tell the left drive motor to spin if the values are not in the deadband range
-      if (DrivetrainLNeedsToBeStopped_Controller1) {
-        LeftDriveSmart.setVelocity(drivetrainLeftSideSpeed, percent);
-        LeftDriveSmart.spin(forward);
-      }
-      // only tell the right drive motor to spin if the values are not in the deadband range
-      if (DrivetrainRNeedsToBeStopped_Controller1) {
-        RightDriveSmart.setVelocity(drivetrainRightSideSpeed, percent);
-        RightDriveSmart.spin(forward);
-      }
+
+
+      int changePercent = 15;
+
+      if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
+      if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
+
+      //if (motorFL < 0) {leftMotorA.spin(vex::directionType::rev);} else {leftMotorA.spin(vex::directionType::fwd);}
+
+
     }
+
+
+
+    leftMotorA.setVelocity(motorFL, percent);
+    leftMotorB.setVelocity(motorBL, percent);
+    rightMotorA.setVelocity(motorFR, percent);
+    rightMotorB.setVelocity(motorBR, percent);
 
     // wait before repeating the process
     wait(20, msec);

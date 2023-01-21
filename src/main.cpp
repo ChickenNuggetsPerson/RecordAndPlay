@@ -30,14 +30,22 @@
 using namespace vex;
 
 
-const char* pathNames[4] = {
+const char* pathNames[5] = {
   "Paths/Skills/main.txt",
   "Paths/Left/Launch.txt",
   "Paths/Right/GoToRoller.txt",
-  "Paths/Right/RollerToMid.txt"
+  "Paths/Right/RollerToMid.txt",
+  "test.txt"
 };
 
 
+int readFile(const char* fileName) {
+  unsigned int ival = 0;
+  unsigned char readBuff[4];
+  Brain.SDcard.loadfile(fileName, readBuff, 4);
+	ival = *(unsigned int*)(readBuff);
+  return ival;
+};
 
 
 // A global instance of competition
@@ -103,8 +111,12 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
-  x = 0;
-  y = 0;
+  motorFL = 0;
+  motorFR = 0;
+  motorBL = 0;
+  motorBR = 0;
+
+  replaying = false;
 
   // Start Launcher rev code
   StartLauncherControl();
@@ -128,17 +140,30 @@ int whenStarted() {
 
 
 
+  andrewDriving = readFile("andrewDriving");
+
+
+
   int hover = 0;
   int selected = 0;
+
 
   while (true) {
     Brain.Screen.clearScreen();
     Brain.Screen.setPenColor(vex::color::white);
     Brain.Screen.setCursor(2, 3);
     Brain.Screen.print("Select A Path:");
+     Brain.Screen.print("FL: ");
+      Brain.Screen.print(motorFL);
+      Brain.Screen.print("  FR: ");
+      Brain.Screen.print(motorFR);
+      Brain.Screen.print("  BL: ");
+      Brain.Screen.print(motorBL);
+      Brain.Screen.print("  BR: ");
+      Brain.Screen.print(motorBR);  
 
     int i;
-    for (i=0; i < 4; i++) {
+    for (i=0; i < 5; i++) {
       if ( i == hover ) {
         Brain.Screen.setPenColor(vex::color::yellow);
         Brain.Screen.drawRectangle(35, 50 + ( i * 40 ), 350, 40);
@@ -167,16 +192,28 @@ int whenStarted() {
     if (Controller1.ButtonDown.pressing()) { hover++; }
     if (Controller1.ButtonUp.pressing()) { hover--; }
 
-    if (hover > 3) { hover = 0; }
-    if (hover < 0) { hover = 3; }
+    if (hover > 4) { hover = 0; }
+    if (hover < 0) { hover = 4; }
 
     if (Controller1.ButtonA.pressing()) { selected = hover; Controller1.Screen.print(selected);}
 
     if (Controller1.ButtonLeft.pressing()) {
+      motorFL = 0;
+      motorFR = 0;
+      motorBL = 0;
+      motorBR = 0;
+
       record(pathNames[selected]);
     }
 
     if (Controller1.ButtonRight.pressing()) {
+      
+      motorFL = 0;
+      motorFR = 0;
+      motorBL = 0;
+      motorBR = 0;
+
+
       replay(pathNames[selected]);
     }
 

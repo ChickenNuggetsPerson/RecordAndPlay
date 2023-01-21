@@ -137,8 +137,6 @@ void record(const char* pathFile) {
   Brain.Screen.setCursor(3, 4);
   Brain.Screen.print(pathFile);
 
-  RightDriveSmart.resetPosition();
-  LeftDriveSmart.resetPosition();
 
   bool running = true;
 
@@ -148,26 +146,21 @@ void record(const char* pathFile) {
     
     double startTime = Brain.timer(vex::timeUnits::msec);
 
-    // get the values of the controller's joystick axes
-    double left_Axis = Controller1.Axis3.position() / 2; //LeftDriveSmart.velocity(vex::percentUnits::pct); //
-    double right_Axis = Controller1.Axis2.position() / 2; //RightDriveSmart.velocity(vex::percentUnits::pct); //
-
-
     Brain.Screen.clearScreen();
     Brain.Screen.setCursor(2, 2);
     Brain.Screen.print("Left Pos: ");
-    Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));
+    //Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));
 
     Brain.Screen.setCursor(4, 2);
     Brain.Screen.print("Right Pos: ");
-    Brain.Screen.print(RightDriveSmart.position(vex::rotationUnits::rev));
+    //Brain.Screen.print(RightDriveSmart.position(vex::rotationUnits::rev));
    
     Brain.Screen.setCursor(6, 2);
     Brain.Screen.print(deltaTime);
   
     
     // output the values to the file
-    output_file << left_Axis << "," << right_Axis << "," << RunLauncher << ","<< runLauncherFeeder << ","<< runMainFeeder << ","<< LeftDriveSmart.position(vex::rotationUnits::rev) << "," << RightDriveSmart.position(vex::rotationUnits::rev) << ","<< deltaTime << "," << std::endl;
+    output_file << rightMotorA.velocity(percent) << "," << leftMotorA.velocity(percent) << "," << rightMotorB.velocity(percent) << "," << leftMotorB.velocity(percent) << "," << RunLauncher << "," << runLauncherFeeder << "," << runMainFeeder << "," <<  deltaTime << "," << std::endl;
     
 
     if (Controller1.ButtonY.pressing()) {
@@ -196,17 +189,14 @@ void replay( const char* pathFile) {
   std::ifstream input_file(pathFile);
 
   Brain.Screen.setPenColor(vex::color::white);
-
-  RightDriveSmart.resetPosition();
-  LeftDriveSmart.resetPosition();
-
-  //double lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
-  //double lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
+  
+  int launchVel = 0;
 
   double readDeltaTime = 0;
   double deltaTime;
 
   bool debug = true;
+  replaying = true;
 
   while (true) {
 
@@ -225,10 +215,15 @@ void replay( const char* pathFile) {
       // reset the file stream to the beginning of the file
       input_file.clear();
       input_file.seekg(0, std::ios::beg);
-      x = 0;
-      y = 0;
 
-      wait(10, seconds);
+      motorFL = 0;
+      motorFR = 0;
+      motorBL = 0;
+      motorBR = 0;
+
+      replaying = false;
+
+      //wait(10, seconds);
       break;
     }
 
@@ -236,20 +231,31 @@ void replay( const char* pathFile) {
     // parse the values from the line
     std::stringstream ss(line);
 
-    unsigned int runlaunch, runlaunchfeed, runmainfeed = 0;
-    double leftPos, rightPos = 0;
+    unsigned int runlaunch, runlaunchfeed, runmainfeed, fr, br, fl, bl = 0;
 
-    std::string x_str;
-    std::getline(ss, x_str, ',');
-    std::istringstream xStream(x_str.c_str());
-    xStream >> x;
+    std::string fr_str;
+    std::getline(ss, fr_str, ',');
+    std::istringstream frStream(fr_str.c_str());
+    frStream >> fr;
+    motorFR = fr;
 
+    std::string fl_str;
+    std::getline(ss, fl_str, ',');
+    std::istringstream flStream(fl_str.c_str());
+    flStream >> fl;
+    motorFL = fl;
 
-    std::string y_str;
-    std::getline(ss, y_str, ',');
-    std::istringstream yStream(y_str.c_str());
-    yStream >> y;
+    std::string br_str;
+    std::getline(ss, br_str, ',');
+    std::istringstream brStream(br_str.c_str());
+    brStream >> br;
+    motorBR = br;
 
+    std::string bl_str;
+    std::getline(ss, bl_str, ',');
+    std::istringstream blStream(bl_str.c_str());
+    blStream >> bl;
+    motorBL = bl;
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
@@ -267,19 +273,6 @@ void replay( const char* pathFile) {
     std::getline(ss, runmainfeed_str, ',');
     std::istringstream runmainfeedStream(runmainfeed_str.c_str());
     runmainfeedStream >> runmainfeed;
-
-
-    std::string leftPos_str;
-    std::getline(ss, leftPos_str, ',');
-    std::istringstream LeftPosStream(leftPos_str.c_str());
-    LeftPosStream >> leftPos;
-
-
-    std::string rightPos_str;
-    std::getline(ss, rightPos_str, ',');
-    std::istringstream rightPosStream(rightPos_str.c_str());
-    rightPosStream >> rightPos;
-
     
 
     std::string readDeltaTime_str;
@@ -290,42 +283,34 @@ void replay( const char* pathFile) {
 
 
 
-    RunLauncher = runlaunch;
-    runLauncherFeeder = runlaunchfeed;
-    runMainFeeder = runmainfeed;
-
-    //LeftDriveSmart.rotateTo(leftPos, vex::rotationUnits::rev);
-    //RightDriveSmart.rotateTo(rightPos, vex::rotationUnits::rev);
-
-    if (!launchControllIsRunning) {
-      if (RunLauncher == 1) {
-        LauncherVel = LauncherVel + 5.0;
-      } else if (RunLauncher == 0 ) {
-        LauncherVel = LauncherVel + -5.0;
-      }
-      if (LauncherVel > 100) {
-        LauncherVel = 100;
-      }
-      if (LauncherVel < 0.0) {
-        LauncherVel = 0.0;
-      }
-
-      LauncherGroup.setVelocity(LauncherVel, percent);
-      LauncherFeeder.setVelocity(runLauncherFeeder * 100, percent);
-      PickerUper.setVelocity(runMainFeeder, percent);
-
-
+    if (runlaunch == 1) {
+      launchVel = launchVel + 5.0;
+    } else if (runlaunch == 0 ) {
+      launchVel = launchVel + -5.0;
     }
+    if (launchVel > 100) {
+      launchVel = 100;
+    }
+    if (launchVel < 0.0) {
+      launchVel = 0.0;
+    }
+
+    LauncherGroup.setVelocity(launchVel, percent);
+    LauncherFeeder.setVelocity(runlaunchfeed * 100, percent);
+    PickerUper.setVelocity(runmainfeed, percent);
 
     if (debug) {
 
       Brain.Screen.clearScreen();
       Brain.Screen.setCursor(1, 5);
-      Brain.Screen.print("Left: ");
-      Brain.Screen.print(x);
-      Brain.Screen.setCursor(1, 17);
-      Brain.Screen.print("Right: ");
-      Brain.Screen.print(y);  
+      Brain.Screen.print("FL: ");
+      Brain.Screen.print(motorFL);
+      Brain.Screen.print("  FR: ");
+      Brain.Screen.print(motorFR);
+      Brain.Screen.print("  BL: ");
+      Brain.Screen.print(motorBL);
+      Brain.Screen.print("  BR: ");
+      Brain.Screen.print(motorBR);  
       Brain.Screen.setCursor(2, 5);
       Brain.Screen.print("RunLaunch: ");
       Brain.Screen.print(runlaunch); 
@@ -346,16 +331,8 @@ void replay( const char* pathFile) {
 
       Brain.Screen.setCursor(6, 5);
       Brain.Screen.print("Lancher Vel: ");
-      Brain.Screen.print(LauncherVel);    
+      //Brain.Screen.print(LauncherVel);    
  
-      Brain.Screen.setCursor(8, 5);
-      Brain.Screen.print("ReadLeftPos: ");
-      Brain.Screen.print(leftPos);    
-
-      Brain.Screen.setCursor(9, 5);
-      Brain.Screen.print("ActualLeftPos: ");
-      Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));    
-
     }
 
     double endTime = Brain.timer(vex::timeUnits::msec);
@@ -370,4 +347,4 @@ void replay( const char* pathFile) {
     //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
 
-}
+};
