@@ -2,6 +2,8 @@
 #include "userFunctions.h"
 
 using namespace vex;
+using std::cout;
+using std::endl;
 
 
 // Variables
@@ -196,6 +198,14 @@ void replay( const char* pathFile) {
   double deltaTime;
 
   bool debug = true;
+
+  double avgDelta = 0;
+  double avgReadDelta = 0;
+  double avgWaitTime = 0;
+  double highestDelta = 0;
+  double highestReadDelta = 0;
+  int totalLines = 0;
+
   replaying = true;
 
   while (true) {
@@ -222,6 +232,20 @@ void replay( const char* pathFile) {
       motorBR = 0;
 
       replaying = false;
+
+
+      int i;
+      for ( i = 0; i < 20; i ++ ) { cout << "" << endl; }
+
+      cout << "Replaying Done: " << endl;
+      cout << "" << endl;
+      cout << "Average Writing Delta: " << ( avgReadDelta / totalLines ) << endl;
+      cout << "Average Reading Delta: " << ( avgDelta / totalLines ) << endl;
+      cout << "Average Waiting Delta: " << ( avgWaitTime / totalLines ) << endl;
+      cout << "" << endl;
+      cout << "Highest Writing Delta: " << highestReadDelta << endl;
+      cout << "Highest Reading Delta: " << highestDelta << endl;
+      cout << "" << endl;
 
       //wait(10, seconds);
       break;
@@ -340,11 +364,15 @@ void replay( const char* pathFile) {
 
     Brain.Screen.setCursor(7, 5);
     Brain.Screen.print(readDeltaTime - deltaTime);
+    
+    avgDelta = avgDelta + deltaTime;
+    avgReadDelta = avgReadDelta + readDeltaTime;
+    avgWaitTime = avgWaitTime + ( readDeltaTime - deltaTime ) ;
+
+    if ( deltaTime > highestDelta ) { highestDelta = deltaTime; }
+    if ( readDeltaTime > highestReadDelta ) { highestReadDelta = readDeltaTime; }
 
     vex::task::sleep(fabs(readDeltaTime - deltaTime));
-
-    //lastLeftPos = LeftDriveSmart.position(vex::rotationUnits::rev);
-    //lastRightPos = RightDriveSmart.position(vex::rotationUnits::rev);
   }
 
 };
