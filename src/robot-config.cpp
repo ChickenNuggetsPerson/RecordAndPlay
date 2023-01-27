@@ -28,9 +28,15 @@ int motorFR = 0;
 int motorBL = 0;
 int motorBR = 0;
 
+int strafeFBL = 0;
+int strafeFBR = 0;
+int strafeLRL = 0;
+int strafeLRR = 0;
+
+
+
 bool replaying = false;
 
-int andrewDriving = 1;
 
 // VEXcode generated functions
 // define variable for remote controller enable/disable
@@ -45,10 +51,7 @@ int rc_auto_loop_function_Controller1() {
   // update the motors based on the input values
 
 
-  int strafeFBL = 0;
-  int strafeFBR = 0;
-  int strafeLRL = 0;
-  int strafeLRR = 0;
+
 
 
   leftMotorA.spin(fwd);
@@ -72,7 +75,7 @@ int rc_auto_loop_function_Controller1() {
       strafeFBL = Controller1.Axis3.position();
       strafeFBR = Controller1.Axis2.position();
 
-      strafeLRL = - Controller1.Axis4.position();
+      strafeLRL = Controller1.Axis4.position();
       strafeLRR = Controller1.Axis1.position();
 
 
@@ -81,32 +84,21 @@ int rc_auto_loop_function_Controller1() {
       if (strafeLRL < deadzone && strafeLRL > -deadzone) { strafeLRL = 0; }
       if (strafeLRR < deadzone && strafeLRR > -deadzone) { strafeLRR = 0; }
 
-
-      if (andrewDriving == 1) {
-        motorFL = strafeFBL + strafeLRL;
-        motorFR = strafeFBR - strafeLRL;
-
-        motorBL = strafeFBL - strafeLRL;
-        motorBR = strafeFBR + strafeLRL;
-      } else {
-        motorFL = strafeFBL + strafeLRL + strafeLRR;
-        motorFR = strafeFBL - strafeLRL - strafeLRR;
-
-        motorBL = strafeFBL - strafeLRL + strafeLRR;
-        motorBR = strafeFBL + strafeLRL - strafeLRR;
-      }
-
-
-      int changePercent = 15;
-
-      if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
-      if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
-
-      //if (motorFL < 0) {leftMotorA.spin(vex::directionType::rev);} else {leftMotorA.spin(vex::directionType::fwd);}
-
-
     }
 
+
+    
+    motorFL = strafeFBL - strafeLRL;
+    motorFR = strafeFBR + strafeLRL;
+
+    motorBL = strafeFBL + strafeLRL;
+    motorBR = strafeFBR - strafeLRL;
+    
+
+    int changePercent = 15;
+
+    if (motorBL > changePercent || motorBL < - changePercent) {if (motorBL > 0) {motorBL = motorBL - changePercent;} else {motorBL = motorBL + changePercent;}}
+    if (motorBR > changePercent || motorBR < - changePercent) {if (motorBR > 0) {motorBR = motorBR - changePercent;} else {motorBR = motorBR + changePercent;}}
 
 
     leftMotorA.setVelocity(motorFL, percent);

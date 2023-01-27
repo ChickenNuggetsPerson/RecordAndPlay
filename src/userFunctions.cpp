@@ -27,6 +27,8 @@ void StartLauncherControl() {
   while (true) {
     wait(0.05, seconds);
 
+    if ( !replaying ) {
+
     if (LauncherGroup.temperature(vex::temperatureUnits::celsius) > 45) {
       maxVel = 50;
     } else { maxVel = 100; };
@@ -65,6 +67,8 @@ void StartLauncherControl() {
     if (runMainFeeder == -1) { PickerUper.setVelocity(-100, percent); }
 
   }
+    }
+
 }
 
 // Controller Button Functions
@@ -143,26 +147,29 @@ void record(const char* pathFile) {
   bool running = true;
 
   double deltaTime = 0;
-
+  
   while (running) {
     
     double startTime = Brain.timer(vex::timeUnits::msec);
 
     Brain.Screen.clearScreen();
-    Brain.Screen.setCursor(2, 2);
-    Brain.Screen.print("Left Pos: ");
-    //Brain.Screen.print(LeftDriveSmart.position(vex::rotationUnits::rev));
 
-    Brain.Screen.setCursor(4, 2);
-    Brain.Screen.print("Right Pos: ");
-    //Brain.Screen.print(RightDriveSmart.position(vex::rotationUnits::rev));
    
-    Brain.Screen.setCursor(6, 2);
-    Brain.Screen.print(deltaTime);
+    Brain.Screen.drawRectangle(200, 80, 80, 80);
+    Brain.Screen.drawLine(240, 120, 240 + strafeLRL, 120);
+    Brain.Screen.drawLine(180, 120, 180, 120 - strafeFBL);
+    Brain.Screen.drawLine(300, 120, 300, 120 - strafeFBR);
+
+
+    //strafeFBL = Controller1.Axis3.position();
+    //strafeFBR = Controller1.Axis2.position();
+
+    //strafeLRL = Controller1.Axis4.position();
+    //strafeLRR = Controller1.Axis1.position();
   
     
     // output the values to the file
-    output_file << rightMotorA.velocity(percent) << "," << leftMotorA.velocity(percent) << "," << rightMotorB.velocity(percent) << "," << leftMotorB.velocity(percent) << "," << RunLauncher << "," << runLauncherFeeder << "," << runMainFeeder << "," <<  deltaTime << "," << std::endl;
+    output_file << strafeFBL << "," << strafeFBR << "," << strafeLRL << "," << strafeLRR << "," << RunLauncher << "," << runLauncherFeeder << "," << PickerUper.current(percent) << "," <<  deltaTime << "," << std::endl;
     
 
     if (Controller1.ButtonY.pressing()) {
@@ -226,13 +233,17 @@ void replay( const char* pathFile) {
       input_file.clear();
       input_file.seekg(0, std::ios::beg);
 
-      motorFL = 0;
-      motorFR = 0;
-      motorBL = 0;
-      motorBR = 0;
+      strafeFBL = 0;
+      strafeFBR = 0;
+      strafeLRL = 0;
+      strafeLRR = 0;
 
       replaying = false;
 
+
+      PickerUper.setVelocity(0, percent);
+      LauncherFeeder.setVelocity(0, percent);
+      LauncherGroup.setVelocity(0, percent);
 
       int i;
       for ( i = 0; i < 20; i ++ ) { cout << "" << endl; }
@@ -251,35 +262,36 @@ void replay( const char* pathFile) {
       break;
     }
 
-  
+    totalLines ++;
+
     // parse the values from the line
     std::stringstream ss(line);
 
-    unsigned int runlaunch, runlaunchfeed, runmainfeed, fr, br, fl, bl = 0;
+    unsigned int runlaunch, runlaunchfeed, runmainfeed, fbl, fbr, lrl, lrr = 0;
 
-    std::string fr_str;
-    std::getline(ss, fr_str, ',');
-    std::istringstream frStream(fr_str.c_str());
-    frStream >> fr;
-    motorFR = fr;
+    std::string fbl_str;
+    std::getline(ss, fbl_str, ',');
+    std::istringstream fblStream(fbl_str.c_str());
+    fblStream >> fbl;
+    strafeFBL = fbl;
 
-    std::string fl_str;
-    std::getline(ss, fl_str, ',');
-    std::istringstream flStream(fl_str.c_str());
-    flStream >> fl;
-    motorFL = fl;
+    std::string fbr_str;
+    std::getline(ss, fbr_str, ',');
+    std::istringstream fbrStream(fbr_str.c_str());
+    fbrStream >> fbr;
+    strafeFBR = fbr;
 
-    std::string br_str;
-    std::getline(ss, br_str, ',');
-    std::istringstream brStream(br_str.c_str());
-    brStream >> br;
-    motorBR = br;
+    std::string lrl_str;
+    std::getline(ss, lrl_str, ',');
+    std::istringstream lrlStream(lrl_str.c_str());
+    lrlStream >> lrl;
+    strafeLRL = lrl;
 
-    std::string bl_str;
-    std::getline(ss, bl_str, ',');
-    std::istringstream blStream(bl_str.c_str());
-    blStream >> bl;
-    motorBL = bl;
+    std::string lrr_str;
+    std::getline(ss, lrr_str, ',');
+    std::istringstream lrrStream(lrr_str.c_str());
+    lrrStream >> lrr;
+    strafeLRR = lrr;
 
     std::string runlaunch_str;
     std::getline(ss, runlaunch_str, ',');
@@ -321,20 +333,23 @@ void replay( const char* pathFile) {
 
     LauncherGroup.setVelocity(launchVel, percent);
     LauncherFeeder.setVelocity(runlaunchfeed * 100, percent);
-    PickerUper.setVelocity(runmainfeed, percent);
+    if ( runmainfeed > 0 ) { PickerUper.setVelocity(100, percent); }
+    if ( runmainfeed < 0 ) { PickerUper.setVelocity(-100, percent); }
+    if ( runmainfeed == 0 ) { PickerUper.setVelocity(0, percent); } 
+    
 
     if (debug) {
 
       Brain.Screen.clearScreen();
       Brain.Screen.setCursor(1, 5);
-      Brain.Screen.print("FL: ");
-      Brain.Screen.print(motorFL);
-      Brain.Screen.print("  FR: ");
-      Brain.Screen.print(motorFR);
-      Brain.Screen.print("  BL: ");
-      Brain.Screen.print(motorBL);
-      Brain.Screen.print("  BR: ");
-      Brain.Screen.print(motorBR);  
+      Brain.Screen.print("FBL: ");
+      Brain.Screen.print(fbl);
+      Brain.Screen.print("  FBR: ");
+      Brain.Screen.print(fbr);
+      Brain.Screen.print("  LRL: ");
+      Brain.Screen.print(lrl);
+      //Brain.Screen.print("  BR: ");
+      //Brain.Screen.print(motorBR);  
       Brain.Screen.setCursor(2, 5);
       Brain.Screen.print("RunLaunch: ");
       Brain.Screen.print(runlaunch); 

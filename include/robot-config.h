@@ -14,14 +14,15 @@ extern motor rightMotorB;
 extern motor leftMotorA;
 extern motor leftMotorB;
 
-extern int motorFL;
-extern int motorFR;
-extern int motorBL;
-extern int motorBR;
+extern int strafeFBL;
+extern int strafeFBR;
+extern int strafeLRL;
+extern int strafeLRR;
 
 extern bool replaying;
 
-extern int andrewDriving;
+
+extern bool skillsRecording; 
 
 
 

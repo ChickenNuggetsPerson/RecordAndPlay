@@ -38,8 +38,21 @@ const char* pathNames[5] = {
   "test.txt"
 };
 
+const char* skillsPathNames[10] = {
+  "Paths/Skills/zero.txt",
+  "Paths/Skills/one.txt",
+  "Paths/Skills/two.txt",
+  "Paths/Skills/three.txt",
+  "Paths/Skills/four.txt",
+  "Paths/Skills/five.txt",
+  "Paths/Skills/six.txt",
+  "Paths/Skills/seven.txt",
+  "Paths/Skills/eight.txt",
+  "Paths/Skills/nine.txt"
+};
 
-int readFile(const char* fileName) {
+
+unsigned int readFile(const char* fileName) {
   unsigned int ival = 0;
   unsigned char readBuff[4];
   Brain.SDcard.loadfile(fileName, readBuff, 4);
@@ -111,10 +124,10 @@ void autonomous(void) {
 
 void usercontrol(void) {
 
-  motorFL = 0;
-  motorFR = 0;
-  motorBL = 0;
-  motorBR = 0;
+  strafeFBL = 0;
+  strafeFBR = 0;
+  strafeLRL = 0;
+  strafeLRR = 0;
 
   replaying = false;
 
@@ -124,7 +137,29 @@ void usercontrol(void) {
 }
 
 
+void clearAll() {
+  Brain.Screen.clearScreen();
+  Brain.Screen.setCursor(1, 1);
+  Brain.Screen.print("Clearing...");
+  int i;
+  for (i=0; i < 10; i++) {
+    std::ofstream output_file(skillsPathNames[i]);
+    output_file << "" << std::endl;
+    output_file.close();
+  }
+  wait(1, seconds);
+}
 
+
+int filesIndex[10] = {};
+void indexFiles() {
+  int i;
+  for (i=0; i < 10; i++) {
+    if (Brain.SDcard.size(skillsPathNames[i]) > 10) {
+      filesIndex[i] = 1;
+    } else { filesIndex[i] = 0; }
+  }
+}
 
 
 // Once the match is started
@@ -139,9 +174,13 @@ int whenStarted() {
   PickerUper.setVelocity(0.0, percent);
 
 
+  int skills;
 
-  andrewDriving = readFile("andrewDriving");
-
+  if ( Brain.SDcard.isInserted() ) {
+    skills = readFile("skills");
+  } else { skills = 1; }
+  
+  indexFiles();
 
 
   int hover = 0;
@@ -149,75 +188,180 @@ int whenStarted() {
 
 
   while (true) {
+  
     Brain.Screen.clearScreen();
     Brain.Screen.setPenColor(vex::color::white);
     Brain.Screen.setCursor(2, 3);
-    Brain.Screen.print("Select A Path:");
-     Brain.Screen.print("FL: ");
-      Brain.Screen.print(motorFL);
-      Brain.Screen.print("  FR: ");
-      Brain.Screen.print(motorFR);
-      Brain.Screen.print("  BL: ");
-      Brain.Screen.print(motorBL);
-      Brain.Screen.print("  BR: ");
-      Brain.Screen.print(motorBR);  
 
-    int i;
-    for (i=0; i < 5; i++) {
-      if ( i == hover ) {
-        Brain.Screen.setPenColor(vex::color::yellow);
-        Brain.Screen.drawRectangle(35, 50 + ( i * 40 ), 350, 40);
-      }
-      if ( i == selected ) {
-        Brain.Screen.setPenColor(vex::color::green);
-        Brain.Screen.setCursor(4 + ( i * 2 ), 5);
-        Brain.Screen.print(pathNames[i]);
-      } else {
-        Brain.Screen.setPenColor(vex::color::white);
-        Brain.Screen.setCursor(4 + ( i * 2 ), 5);
-        Brain.Screen.print(pathNames[i]);
+    
+    
+
+    if (skills == 0) {
+      Brain.Screen.print("Select A Path:");
+      int i;
+      for (i=0; i < 5; i++) {
+        if ( i == hover ) {
+          Brain.Screen.setPenColor(vex::color::yellow);
+          Brain.Screen.drawRectangle(35, 50 + ( i * 40 ), 350, 40);
+        }
+        if ( i == selected ) {
+          Brain.Screen.setPenColor(vex::color::green);
+          Brain.Screen.setCursor(4 + ( i * 2 ), 5);
+          Brain.Screen.print(pathNames[i]);
+        } else {
+          Brain.Screen.setPenColor(vex::color::white);
+          Brain.Screen.setCursor(4 + ( i * 2 ), 5);
+          Brain.Screen.print(pathNames[i]);
+        }
+
       }
 
-    }
+      Controller1.Screen.clearScreen();
 
-    Controller1.Screen.clearScreen();
-
-    Controller1.Screen.setCursor(1, 0);
-    Controller1.Screen.print("Left - Record");
-    Controller1.Screen.setCursor(2, 0);
-    Controller1.Screen.print("Right - Play");
+      Controller1.Screen.setCursor(1, 0);
+      Controller1.Screen.print("Left - Record");
+      Controller1.Screen.setCursor(2, 0);
+      Controller1.Screen.print("Right - Play");
 
 
 
-    if (Controller1.ButtonDown.pressing()) { hover++; }
-    if (Controller1.ButtonUp.pressing()) { hover--; }
+      if (Controller1.ButtonDown.pressing()) { hover++; }
+      if (Controller1.ButtonUp.pressing()) { hover--; }
 
-    if (hover > 4) { hover = 0; }
-    if (hover < 0) { hover = 4; }
+      if (hover > 4) { hover = 0; }
+      if (hover < 0) { hover = 4; }
 
-    if (Controller1.ButtonA.pressing()) { selected = hover; Controller1.Screen.print(selected);}
+      if (Controller1.ButtonA.pressing()) { selected = hover; Controller1.Screen.print(selected);}
 
-    if (Controller1.ButtonLeft.pressing()) {
-      motorFL = 0;
-      motorFR = 0;
-      motorBL = 0;
-      motorBR = 0;
+      if (Controller1.ButtonLeft.pressing()) {
+        strafeFBL = 0;
+        strafeFBR = 0;
+        strafeLRL = 0;
+        strafeLRR = 0;
 
-      record(pathNames[selected]);
-    }
+        record(pathNames[selected]);
+      }
 
-    if (Controller1.ButtonRight.pressing()) {
+      if (Controller1.ButtonRight.pressing()) {
       
-      motorFL = 0;
-      motorFR = 0;
-      motorBL = 0;
-      motorBR = 0;
+        strafeFBL = 0;
+        strafeFBR = 0;
+        strafeLRL = 0;
+        strafeLRR = 0;
 
 
-      replay(pathNames[selected]);
+        replay(pathNames[selected]);
+      }
+    } else {
+      // Special Skills Selection Menu
+
+      Brain.Screen.print("Select A Path:        IN SKILLS MODE");
+
+      int i;
+      for (i=0; i < 10; i++) {
+        if ( hover <= 4 && i <= 4) {
+          if ( i == hover ) {
+            Brain.Screen.setPenColor(vex::color::yellow);
+            Brain.Screen.drawRectangle(35, 50 + ( i * 40 ), 350, 40);
+          }
+          if ( i == selected ) {
+            Brain.Screen.setPenColor(vex::color::green);
+            Brain.Screen.setCursor(4 + ( i * 2 ), 5);
+            Brain.Screen.print(skillsPathNames[i]);
+          } else {
+            if (filesIndex[i] == 1) {Brain.Screen.setPenColor(vex::color::yellow);} else {Brain.Screen.setPenColor(vex::color::white);}
+            Brain.Screen.setCursor(4 + ( i * 2 ), 5);
+            Brain.Screen.print(skillsPathNames[i]);
+          }
+        } else if (hover > 4 && i > 4) {
+          if ( i == hover ) {
+            Brain.Screen.setPenColor(vex::color::yellow);
+            Brain.Screen.drawRectangle(35, 50 + ( ( i - 5 ) * 40 ), 350, 40);
+          }
+          if ( i == selected ) {
+            Brain.Screen.setPenColor(vex::color::green);
+            Brain.Screen.setCursor(4 + ( ( i - 5 ) * 2 ), 5);
+            Brain.Screen.print(skillsPathNames[i]);
+          } else {
+            if (filesIndex[i] == 1) {Brain.Screen.setPenColor(vex::color::yellow);} else {Brain.Screen.setPenColor(vex::color::white);}
+            Brain.Screen.setCursor(4 + ( ( i - 5 ) * 2 ), 5);
+            Brain.Screen.print(skillsPathNames[i]);
+          }
+        }
+        
+
+      }
+
+      Brain.Screen.setPenColor(vex::color::white);
+      Brain.Screen.drawRectangle(370, 200, 100, 30);
+      Brain.Screen.printAt(375, 225, false, "Clear All");
+
+
+      Controller1.Screen.clearScreen();
+
+      Controller1.Screen.setCursor(1, 0);
+      Controller1.Screen.print("Left - Record");
+      Controller1.Screen.setCursor(2, 0);
+      Controller1.Screen.print("Right - Play");
+
+      //Brain.Screen.drawRectangle(370, 200, 100, 30);
+      if ( Brain.Screen.pressing() && Brain.Screen.xPosition() > 370 && Brain.Screen.xPosition() < 470 && Brain.Screen.yPosition() > 200 ) {
+        //Brain.Screen.drawRectangle(0, 0, 200, 200, vex::color::red);
+        Brain.Screen.clearScreen();
+        Brain.Screen.setCursor(3, 18);
+        Brain.Screen.print("Are You Sure?");
+        Brain.Screen.setCursor(5, 16);
+        Brain.Screen.print("< Yes       No >");    
+        bool notSelected = true;
+        while (notSelected) {
+          if (Controller1.ButtonLeft.pressing()) {
+            clearAll();
+            indexFiles();
+            notSelected = false;
+          }
+
+          if (Controller1.ButtonRight.pressing()) { notSelected = false; }
+          wait(0.1, seconds);
+        }
+        
+      }
+
+
+
+      if (Controller1.ButtonDown.pressing()) { hover++; }
+      if (Controller1.ButtonUp.pressing()) { hover--; }
+
+      if (hover > 9) { hover = 0; }
+      if (hover < 0) { hover = 9; }
+
+      if (Controller1.ButtonA.pressing()) { selected = hover; Controller1.Screen.print(selected);}
+
+      if (Controller1.ButtonLeft.pressing()) {
+        strafeFBL = 0;
+        strafeFBR = 0;
+        strafeLRL = 0;
+        strafeLRR = 0;
+
+        record(skillsPathNames[selected]);
+        indexFiles();
+      }
+
+      if (Controller1.ButtonRight.pressing()) {
+      
+        strafeFBL = 0;
+        strafeFBR = 0;
+        strafeLRL = 0;
+        strafeLRR = 0;
+
+
+        replay(skillsPathNames[selected]);
+      }
     }
+    
+    
+    Brain.Screen.waitForRefresh();
 
-    wait(0.2, seconds);
+    wait(0.06, seconds);
   }
  
   return 0;
@@ -254,6 +398,7 @@ int main() {
 
   Controller1.ButtonR1.released(buttonR1Released);
   Controller1.ButtonL1.released(buttonL1Released);
+
 
   // Start the 
   whenStarted();
