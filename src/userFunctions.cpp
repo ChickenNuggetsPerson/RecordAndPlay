@@ -154,7 +154,9 @@ void record(const char* pathFile) {
 
     Brain.Screen.clearScreen();
 
-   
+    Brain.Screen.setCursor(1, 1);
+    Brain.Screen.print("Recording:");
+
     Brain.Screen.drawRectangle(200, 80, 80, 80);
     Brain.Screen.drawLine(240, 120, 240 + strafeLRL, 120);
     Brain.Screen.drawLine(180, 120, 180, 120 - strafeFBL);
